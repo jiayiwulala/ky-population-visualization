@@ -40,6 +40,8 @@ var svg = d3.select("svg"),
 var path = d3.geoPath();
            
 var cur = 1;
+var state = 1;
+var census = 1;
 var color = d3.scaleThreshold()
     .domain([30, 60, 120, 360])
     .range(["#fff7ec", "#fee8c8", "#fdd49e", "#fdbb84", "#fc8d59"]);
@@ -101,146 +103,64 @@ d3.json("ky-topo.json", function(error, topology) {
 });
     
 function changeColor() {
-    console.log(cur);
-    if (cur == 1){
-        color = d3.scaleThreshold()
+    var newcolor = d3.scaleThreshold()
         .domain([30, 60, 120, 360])
-        .range(["#ffffcc","#c2e699","#78c679","#31a354","#006837"]);
-
-        var g = svg.append("g")
-            .attr("class", "key")
-            .attr("transform", "translate(0,40)");
-
-        g.selectAll("rect")
-          .data(color.range().map(function(d) {
-              d = color.invertExtent(d);
-              if (d[0] == null) d[0] = x.domain()[0];
-              if (d[1] == null) d[1] = x.domain()[1];
-              return d;
-            }))
-          .enter().append("rect")
-            .attr("height", 8)
-            .attr("x", function(d) { return x(d[0]); })
-            .attr("width", function(d) { return x(d[1]) - x(d[0]); })
-            .attr("fill", function(d) { return color(d[0]); });
-       
-        g.call(d3.axisBottom(x)
-            .tickSize(13)
-            .tickValues(color.domain()))
-          .select(".domain")
-            .remove();
-
-        d3.json("ky-topo.json", function(error, topology) {
-          if (error) throw error;
-
-          svg.append("g")
-            .selectAll("path")
-            .data(topojson.feature(topology, topology.objects.tracts).features)
-            .enter().append("path")
-              .attr("fill", function(d) { return color(d.properties.density); })
-              .attr("d", path);
-
-          svg.append("path")
-              .datum(topojson.feature(topology, topology.objects.counties))
-              .attr("fill", "none")
-              .attr("stroke", "#000")
-              .attr("stroke-opacity", 0.3)
-              .attr("d", path); 
-        });
+    if (cur == 1){
+        newcolor.range(["#ffffcc","#c2e699","#78c679","#31a354","#006837"]);
         cur = 2;
     }
     else{
+        newcolor.range(["#fff7ec", "#fee8c8", "#fdd49e", "#fdbb84", "#fc8d59"]);
         cur = 1;
-
-        color = d3.scaleThreshold()
-            .domain([30, 60, 120, 360])
-            .range(["#fff7ec", "#fee8c8", "#fdd49e", "#fdbb84", "#fc8d59"]);
-
-        var g = svg.append("g")
-            .attr("class", "key")
-            .attr("transform", "translate(0,40)");
-
-        g.selectAll("rect")
-          .data(color.range().map(function(d) {
-              d = color.invertExtent(d);
-              if (d[0] == null) d[0] = x.domain()[0];
-              if (d[1] == null) d[1] = x.domain()[1];
-              return d;
-            }))
-          .enter().append("rect")
-            .attr("height", 8)
-            .attr("x", function(d) { return x(d[0]); })
-            .attr("width", function(d) { return x(d[1]) - x(d[0]); })
-            .attr("fill", function(d) { return color(d[0]); });
-
-        g.call(d3.axisBottom(x)
-            .tickSize(13)
-            .tickValues(color.domain()))
-          .select(".domain")
-            .remove();
-        
-        d3.json("ky-topo.json", function(error, topology) {
-          if (error) throw error;
-
-          svg.append("g")
-            .selectAll("path")
-            .data(topojson.feature(topology, topology.objects.tracts).features)
-            .enter().append("path")
-              .attr("fill", function(d) { return color(d.properties.density); })
-              .attr("d", path);
-
-          svg.append("path")
-              .datum(topojson.feature(topology, topology.objects.counties))
-              .attr("fill", "none")
-              .attr("stroke", "#000")
-              .attr("stroke-opacity", 0.3)
-              .attr("d", path); 
-        });
     }
-
-}
+    
+    svg.selectAll("rect").attr("fill", function(d) { return newcolor(d[0]); });
+    svg.selectAll("path").attr("fill", function(d) { return newcolor(d.properties.density); });
+};
+    
 
 function stateBound(){
-    d3.json("ky-merge-topo.json", function(error, topology) {
+    if (state == 1) {
+      d3.json("ky-merge-topo.json", function(error, topology) {
       if (error) throw error;
-
-      svg.append("g")
-        .selectAll("path")
-        .data(topojson.feature(topology, topology.objects.tracts).features)
-        .enter().append("path")
-          .attr("fill", function(d) { return color(d.properties.density); })
-          .attr("d", path);
-
       svg.append("path")
           .datum(topojson.feature(topology, topology.objects.counties))
+          .attr("id", "statebound")
           .attr("fill", "none")
           .attr("stroke", "#000")
           .attr("stroke-opacity", 0.5)
           .attr("d", path);
-});
+      });
+      state = 2;
+    }
+    else{
+        state = 1;
+        d3.select("#statebound").remove();    
+    }
+};
     
-}
 
 function censusBound(){
+    if (census == 1){  
     d3.json("ky-topo.json", function(error, topology) {
       if (error) throw error;
-
-      svg.append("g")
-        .selectAll("path")
-        .data(topojson.feature(topology, topology.objects.tracts).features)
-        .enter().append("path")
-          .attr("fill", function(d) { return color(d.properties.density); })
-          .attr("d", path);
-
       svg.append("path")
           .datum(topojson.feature(topology, topology.objects.tracts))
+          .attr("id", "censusbound")
           .attr("fill", "None")
           .attr("stroke", "#000")
-          .attr("stroke-opacity", 0.4)
+          .attr("stroke-opacity", 0.5)
           .attr("d", path);
-});
-    
-}
+    });
+
+     census = 2;
+    }
+    else{
+        census = 1;
+        d3.select("#censusbound").remove();
+    }
+                   
+};
 </script>
     <p> 
         <li>Jiayi Yang</li>
@@ -250,7 +170,7 @@ function censusBound(){
     </p>
     <p >
         Weblink:
-        <a href = ""></a>
+        <a href = "https://xiaomaomm.github.io/ky-population-visualization/KYPopDensity.html">https://xiaomaomm.github.io/ky-population-visualization/KYPopDensity.html</a>
     
     </p>
 </body>
